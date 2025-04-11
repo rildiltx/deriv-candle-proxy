@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       subscribe: 0,
     };
 
-    const derivResponse = await fetch("https://api.deriv.com/api/ticks_history", {
+    const response = await fetch("https://api.deriv.com/api/ticks_history", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       body: JSON.stringify(payload),
     });
 
-    const data = await derivResponse.json();
+    const data = await response.json();
 
     if (!data.candles) {
       return res.status(500).json({ error: "Failed to retrieve candles" });
