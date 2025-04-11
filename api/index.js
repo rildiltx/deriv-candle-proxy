@@ -1,4 +1,3 @@
-// api/index.js
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -11,7 +10,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing parameters" });
     }
 
-    const response = await fetch("https://api.deriv.com/api/ticks_history", {
+    const response = await fetch("https://api.deriv.com/api/ticks/history", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -21,7 +20,7 @@ export default async function handler(req, res) {
         count: count,
         granularity: granularity,
         start: 1
-      }),
+      })
     });
 
     const data = await response.json();
@@ -33,7 +32,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ candles: data.candles });
 
   } catch (error) {
-    console.error("Proxy error:", error);
+    console.error("Error fetching Deriv data:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
