@@ -1,10 +1,21 @@
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   try {
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method Not Allowed" });
     }
 
-    const { symbol, granularity, count } = req.body;
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+    const rawData = Buffer.concat(chunks).toString();
+    const { symbol, granularity, count } = JSON.parse(rawData);
 
     if (!symbol || !granularity || !count) {
       return res.status(400).json({ error: "Missing required parameters" });
