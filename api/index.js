@@ -26,16 +26,14 @@ function fetchDerivCandles(symbol, granularity, count) {
     let candleData = [];
 
     ws.on('open', () => {
-      ws.send(
-        JSON.stringify({
-          ticks_history: symbol,
-          end: 'latest',
-          count,
-          style: 'candles',
-          granularity,
-          subscribe: 0,
-        })
-      );
+      ws.send(JSON.stringify({
+        ticks_history: symbol,
+        end: 'latest',
+        count,
+        style: 'candles',
+        granularity,
+        subscribe: 0
+      }));
     });
 
     ws.on('message', (data) => {
@@ -47,26 +45,17 @@ function fetchDerivCandles(symbol, granularity, count) {
           return reject(new Error(response.error.message));
         }
 
-        if (response.candles) {
-          candleData = response.candles.map((c) => ({
-            time: c.epoch,
-            open: parseFloat(c.open),
-            high: parseFloat(c.high),
-            low: parseFloat(c.low),
-            close: parseFloat(c.close),
-          }));
-          ws.close();
-          return resolve(candleData);
-        }
+        const rawCandles = response.candles || response.history?.candles;
 
-        if (response.history?.candles) {
-          candleData = response.history.candles.map((c) => ({
+        if (rawCandles) {
+          candleData = rawCandles.map(c => ({
             time: c.epoch,
             open: parseFloat(c.open),
             high: parseFloat(c.high),
             low: parseFloat(c.low),
-            close: parseFloat(c.close),
+            close: parseFloat(c.close)
           }));
+
           ws.close();
           return resolve(candleData);
         }
