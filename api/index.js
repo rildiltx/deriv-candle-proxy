@@ -1,3 +1,9 @@
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -6,14 +12,12 @@ export default async function handler(req, res) {
   try {
     const body = await new Promise((resolve, reject) => {
       let data = "";
-      req.on("data", chunk => {
-        data += chunk;
-      });
+      req.on("data", chunk => (data += chunk));
       req.on("end", () => {
         try {
           resolve(JSON.parse(data));
-        } catch (e) {
-          reject(e);
+        } catch (err) {
+          reject(err);
         }
       });
     });
@@ -36,9 +40,8 @@ export default async function handler(req, res) {
     });
 
     const json = await response.json();
-    res.status(200).json(json);
-
-  } catch (error) {
-    res.status(500).json({ error: error.message || "Unexpected error" });
+    return res.status(200).json(json);
+  } catch (err) {
+    return res.status(500).json({ error: err.message || "Unexpected error" });
   }
 }
