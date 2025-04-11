@@ -4,29 +4,45 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { symbol, granularity, count } = req.body;
+    const body = req.body;
+
+    // Parse body if needed
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid JSON in request body' });
+      }
+    }
+
+    const { symbol, granularity, count } = body;
 
     if (!symbol || !granularity || !count) {
       return res.status(400).json({ error: 'Missing parameters' });
     }
 
-    const response = await fetch('https://api.deriv.com/api/v1/ohlc', {
+    const derivRes = await fetch('https://api.deriv.com/api/ticks_history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ticks_history: symbol,
         style: 'candles',
         adjust_start_time: 1,
-        count: count,
-        granularity: granularity,
-        end: 'latest',
-      }),
+        count,
+        granularity,
+        end: 'latest'
+      })
     });
 
-    const data = await response.json();
+    const data = await derivRes.json();
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message || 'Deriv API error' });
+    }
+
     return res.status(200).json(data);
   } catch (err) {
-    console.error('[Proxy Error]', err.message);
+    console.error('[Proxy Server Error]', err);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
