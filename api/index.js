@@ -9,15 +9,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  let body = "";
+  let rawBody = "";
 
   req.on("data", chunk => {
-    body += chunk.toString();
+    rawBody += chunk;
   });
 
   req.on("end", async () => {
     try {
-      const { symbol, granularity, count } = JSON.parse(body);
+      const { symbol, granularity, count } = JSON.parse(rawBody);
 
       if (!symbol || !granularity || !count) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
           start: 1,
           style: "candles",
           granularity: granularity
-        })
+        }),
       });
 
       const data = await response.json();
@@ -44,8 +44,8 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json(data);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
     }
   });
 }
