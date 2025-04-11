@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 
 const DERIV_WS_URL = 'wss://ws.binaryws.com/websockets/v3';
-const DERIV_APP_ID = '1089'; // Use Deriv's public app ID or your own
+const DERIV_APP_ID = '1089';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -64,3 +64,10 @@ function fetchDerivCandles(symbol, timeframe, count) {
         ws.on('close', () => console.log('[WS] closed'));
     });
 }
+
+// ⬇️ this is essential for Vercel to parse req.body properly
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
