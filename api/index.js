@@ -1,3 +1,4 @@
+// api/index.js
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -7,36 +8,32 @@ export default async function handler(req, res) {
     const { symbol, granularity, count } = req.body;
 
     if (!symbol || !granularity || !count) {
-      return res.status(400).json({ error: "Missing required parameters" });
+      return res.status(400).json({ error: "Missing parameters" });
     }
-
-    const payload = {
-      ticks_history: symbol,
-      adjust_start_time: 1,
-      count,
-      end: "latest",
-      start: 1,
-      style: "candles",
-      granularity,
-      subscribe: 0,
-    };
 
     const response = await fetch("https://api.deriv.com/api/ticks_history", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticks_history: symbol,
+        style: "candles",
+        adjust_start_time: 1,
+        count: count,
+        granularity: granularity,
+        start: 1
+      }),
     });
 
     const data = await response.json();
 
     if (!data.candles) {
-      return res.status(500).json({ error: "Failed to retrieve candles" });
+      return res.status(500).json({ error: "No candle data returned" });
     }
 
-    return res.status(200).json(data.candles);
-  } catch (err) {
-    return res.status(500).json({ error: err.message || "Internal Server Error" });
+    return res.status(200).json({ candles: data.candles });
+
+  } catch (error) {
+    console.error("Proxy error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 }
