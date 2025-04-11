@@ -1,24 +1,26 @@
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Method Not Allowed" });
-    }
+    const body = await new Promise((resolve, reject) => {
+      let data = "";
+      req.on("data", chunk => {
+        data += chunk;
+      });
+      req.on("end", () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
 
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
-    const rawData = Buffer.concat(chunks).toString();
-    const { symbol, granularity, count } = JSON.parse(rawData);
-
+    const { symbol, granularity, count } = body;
     if (!symbol || !granularity || !count) {
-      return res.status(400).json({ error: "Missing required parameters" });
+      return res.status(400).json({ error: "Missing parameters" });
     }
 
     const response = await fetch("https://api.deriv.com/api/ticks_history", {
@@ -27,15 +29,16 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         ticks_history: symbol,
         style: "candles",
-        granularity,
-        count,
-        end: "latest",
+        granularity: granularity,
+        count: count,
+        subscribe: 0,
       }),
     });
 
-    const data = await response.json();
-    res.status(200).json(data);
+    const json = await response.json();
+    res.status(200).json(json);
+
   } catch (error) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+    res.status(500).json({ error: error.message || "Unexpected error" });
   }
 }
