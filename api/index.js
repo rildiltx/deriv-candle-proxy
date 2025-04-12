@@ -7,11 +7,6 @@ export default async function handler(req, res) {
 
   try {
     const { symbol = 'R_75', granularity = 60, count = 100 } = req.body;
-
-    if (!symbol || !granularity || !count) {
-      return res.status(400).json({ error: 'Missing required parameters' });
-    }
-
     const candles = await fetchDerivCandles(symbol, granularity, count);
     return res.status(200).json(candles);
   } catch (error) {
@@ -22,47 +17,43 @@ export default async function handler(req, res) {
 
 function fetchDerivCandles(symbol, granularity, count) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=1089`);
-    let candleData = [];
+    const ws = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
 
     ws.on('open', () => {
-      ws.send(JSON.stringify({
+      const payload = {
         ticks_history: symbol,
         end: 'latest',
         count,
         style: 'candles',
-        granularity,
-        subscribe: 0
-      }));
+        granularity
+      };
+      ws.send(JSON.stringify(payload));
     });
 
     ws.on('message', (data) => {
-      try {
-        const response = JSON.parse(data);
+      const response = JSON.parse(data);
 
-        if (response.error) {
-          ws.close();
-          return reject(new Error(response.error.message));
-        }
-
-        const rawCandles = response.candles || response.history?.candles;
-
-        if (rawCandles) {
-          candleData = rawCandles.map(c => ({
-            time: c.epoch,
-            open: parseFloat(c.open),
-            high: parseFloat(c.high),
-            low: parseFloat(c.low),
-            close: parseFloat(c.close)
-          }));
-
-          ws.close();
-          return resolve(candleData);
-        }
-      } catch (err) {
+      if (response.error) {
         ws.close();
-        return reject(err);
+        return reject(new Error(response.error.message));
       }
+
+      const rawCandles = response?.candles || response?.history?.candles;
+
+      if (rawCandles && rawCandles.length) {
+        const candles = rawCandles.map(c => ({
+          time: c.epoch,
+          open: parseFloat(c.open),
+          high: parseFloat(c.high),
+          low: parseFloat(c.low),
+          close: parseFloat(c.close),
+        }));
+        ws.close();
+        return resolve(candles);
+      }
+
+      ws.close();
+      return reject(new Error('No candle data found'));
     });
 
     ws.on('error', (err) => reject(err));
