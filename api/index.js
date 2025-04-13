@@ -6,9 +6,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const symbol = req.body.symbol || 'R_75';        // Preserves exact casing
+    // Preserve original casing for symbol
+    const symbol = req.body.symbol || 'R_75';
     const granularity = req.body.granularity || 60;
     const count = req.body.count || 100;
+
+    console.log("[DEBUG] Incoming request:", { symbol, granularity, count });
 
     const candles = await fetchDerivCandles(symbol, granularity, count);
     return res.status(200).json(candles);
@@ -30,6 +33,8 @@ function fetchDerivCandles(symbol, granularity, count) {
         style: 'candles',
         granularity
       };
+
+      console.log("[DEBUG] Sending WebSocket payload:", payload); // <== DEBUG LOG
       ws.send(JSON.stringify(payload));
     });
 
@@ -37,6 +42,7 @@ function fetchDerivCandles(symbol, granularity, count) {
       const response = JSON.parse(data);
 
       if (response.error) {
+        console.error("[DERIV ERROR]", response.error);
         ws.close();
         return reject(new Error(response.error.message));
       }
