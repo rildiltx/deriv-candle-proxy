@@ -6,7 +6,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { symbol = 'R_75', granularity = 60, count = 100 } = req.body;
+    const symbol = req.body.symbol || 'R_75';        // Preserves exact casing
+    const granularity = req.body.granularity || 60;
+    const count = req.body.count || 100;
+
     const candles = await fetchDerivCandles(symbol, granularity, count);
     return res.status(200).json(candles);
   } catch (error) {
